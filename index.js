@@ -78,7 +78,31 @@ function getAccessToken(oAuth2Client, callback) {
  endweek.setDate(today.getDate() + 7);
  var events = [];
  var timeSlots = [];
+ var newEvents = []; //creates the new event list to be sent
 
+//Retrieved Events in Local Area
+ var eventResults = [
+  {name: "Arts Midterm De-Stress",
+  start: new Date("6/23/2019 12:00:00"),
+  end: new Date("6/23/2019 15:00:00")},
+  {name: "Coping Seminar - Thriving With Emotions",
+  start: new Date("6/24/2019 15:00:00"),
+  end: new Date("June 24, 2019 16:00:00")},
+  {name: "Wellness Collaborative Launch",
+  start: new Date("June 25, 2019 8:30:00"),
+  end: new Date("June 25, 2019 12:30:00")},
+  {name: "Luncheon with Profs",
+  start: new Date("June 26, 2019 11:00:00"),
+  end: new Date("June 26, 2019 13:00:00")},
+  {name: "Coping Seminar - Cultivating With Resilience",
+  start: new Date("June 26, 2019 16:00:00"),
+  end: new Date("June 26, 2019 17:00:00")},
+  {name: "Casino Night",
+  start: new Date("June 27, 2019 18:00:00"),
+  end: new Date("June 27, 2019 20:30:00")}
+]
+
+//listEvents(auth): creates a list of events pulled from Google Calendar
 function listEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth});
   calendar.events.list({
@@ -91,49 +115,31 @@ function listEvents(auth) {
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     events = res.data.items;
-    console.log(events);
-    if (events.length) {
-      console.log('Upcoming ${events.length} events:');
-      events.map((event, i) => {
-        const start = event.start.dateTime || event.start.date;
-        console.log(`${start} - ${event.summary}`);
-      });
-    } else {
-      console.log('No upcoming events found.');
-    }
+    generateTimeSlots();
+    generateEvents();
+    console.log('Upcoming ${events.length} events:');
+    const newLen = newEvents.length();
+    var start;
+    
+    for(var x; x < newLen; x++){
+      console.log(`${newEvents[x].start.getDate()} - ${newEvents[x].name}`);
+    } 
   });
 }
 
-var eventResults = [
-    {name: "Arts Midterm De-Stress",
-    start: new Date("June 23, 2019 12:00:00"),
-    end: new Date("June 23, 2019 15:00:00")},
-    {name: "Coping Seminar - Thriving With Emotions",
-    start: new Date("June 24, 2019 15:00:00"),
-    end: new Date("June 24, 2019 16:00:00")},
-    {name: "Wellness Collaborative Launch",
-    start: new Date("June 25, 2019 8:30:00"),
-    end: new Date("June 25, 2019 12:30:00")},
-    {name: "Luncheon with Profs",
-    start: new Date("June 26, 2019 11:00:00"),
-    end: new Date("June 26, 2019 13:00:00")},
-    {name: "Coping Seminar - Cultivating With Resilience",
-    start: new Date("June 26, 2019 16:00:00"),
-    end: new Date("June 26, 2019 17:00:00")},
-    {name: "Casino Night",
-    start: new Date("June 27, 2019 18:00:00"),
-    end: new Date("June 27, 2019 20:30:00")}
-]
-
+//generateTimeSlots(): creates an array of timeslots that hold
+//  various free time blocks in a persons week
 function generateTimeSlots(){
-  var openStart = today.setHours(9,0,0); //9am is the first time you have an opening to check
-  var eventStart; //this is the starting time of the event
-  var eventEnd; //this is the ending time of the event
+  var openStart = new Date();
+  openStart = new Date(today);
+  openStart.setHours(9,0,0); //9am is the first time you have an opening to check
+  var eventStart = new Date(); //this is the starting time of the event
+  var eventEnd = new Date(); //this is the ending time of the event
   var timeBlock; //object that holds startTime, endTime, and Name
 
   events.map((event, i) => {
-    eventStart = event.start.dateTime;
-    eventEnd = event.end.dateTime;
+    eventStart.setDate(event.start.dateTime);
+    eventEnd.setDate(event.end.dateTime);
     
     timeBlock = {
         start:openStart.getDate(),
@@ -142,14 +148,16 @@ function generateTimeSlots(){
 
     if (eventStart.getDate() > openStart.getDate()){
        timeSlots.push(timeBlock);
-       openStart = eventEnd.getDate();
+       openStart.setDate(eventEnd.getDate());
     }
   });
 }
 
-function eventGenerator(){
+//generateEvents():using the open timeslots and the events found in the area
+//  to generate the events that you can actually attended given your current
+//  schedule.
+function generateEvents(){
     const numBlocks = timeSlots.length();
-    var newEvents; //creates the new event list to be sent
     var event; //object to be pushed to newEvents
     var numResults = eventResults.length();
     var slotStart = new Date();
@@ -158,11 +166,11 @@ function eventGenerator(){
     var eventEnd = new Date();
 
     for (var i; i < numBlocks; i++){
-        slotStart = timeSlot[i].start.getDate();
-        slotEnd = timeSlot[i].end.getDate();
+        slotStart.setDate(timeSlot[i].start.getDate());
+        slotEnd.setDate(timeSlot[i].end.getDate());
       for (var j; j < numResults; j++){
-            eventStart = eventResults[j].start.getDate();
-            eventEnd = eventResults[j].end.getDate(); 
+            eventStart.setDate(eventResults[j].start.getDate());
+            eventEnd.setDate(eventResults[j].end.getDate()); 
           if (eventStart >= slotStart && eventEnd <= slotEnd){
               newEvents.push(eventResults[j]);
               break;
